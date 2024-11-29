@@ -11,7 +11,7 @@ public class RemoteControl {
     private static final String BROKER_URL = "tcp://10.42.0.1:1883";
     private static final String CLIENT_ID = "RemoteControl";
 
-    private static final String[] VehiclesID = {
+    protected static final String[] VehiclesID = {
             "825D320F", // White car
             "1C39200D", // White car with white sticker
             "64CB5600", // White car
@@ -68,6 +68,7 @@ public class RemoteControl {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
+                System.out.println(topic + " : " + new String(message.getPayload()));
             }
 
             @Override
@@ -95,90 +96,44 @@ public class RemoteControl {
         System.out.println("I'm subscribing to RemoteControl/+/E/vehicles/connect/#");
     }
 
-    protected void setSpeed(String velocity, String acceleration) throws MqttException, InterruptedException {
-        publish(SECOND_TOPIC, speedSubscription, 0, false);
-        // publish(SECOND_TOPIC, emergencySubscription, 0, false);
-        System.out.println("I'm subscribing to " + EMERGENCY_TOPIC + "/" + SPEED_TOPIC + "and" + EMERGENCY_TOPIC + "/Message" );
-        String payload = String.format("{\"velocity\":\"%s\",\"acceleration\":\"%s\"}", velocity, acceleration);
-        publish(SPEED_TOPIC, payload, 1, false);
-        System.out.println("Changing speed : " + velocity + ", " + acceleration);
+    public void setEmergencyTo(String vehicleID) throws MqttException, InterruptedException {
+        publish(REMOTE_EMERGENCY_TOPIC + "/" + vehicleID, "Emergency", 1, false);
     }
 
-    public void setLights(String lightType, String effect, int start, int end, int frequency) throws MqttException {
-        publish(SECOND_TOPIC, lightsSubscription, 0, false);
-        String payload = String.format(
-                "{\"%s\":{\"effect\":\"%s\",\"start\":%d,\"end\":%d,\"frequency\":%d}}",
-                lightType, effect, start, end, frequency
-        );
-        publish(LIGHTS_TOPIC, payload, 1, false);
-        System.out.println(lightType + " light: effect : " + effect + ", start : " + start + ", end : " + end + ", frequency : " + frequency);
+    public void undoEmergencyTo(String vehicleID) throws MqttException, InterruptedException {
+        publish(REMOTE_EMERGENCY_TOPIC + "/" + vehicleID, "!Emergency", 1, false);
     }
 
-    public void setLane(int velocity, int acceleration, double offset, double offsetFromCenter) throws MqttException {
-        publish(SECOND_TOPIC, laneSubscription, 0, false);
-        String payload = String.format("{\"velocity\":%d,\"acceleration\":%d,\"offset\":%.1f,\"offsetFromCenter\":%.1f}",
-                velocity, acceleration, offset, offsetFromCenter
-        );
-        publish(LANE_TOPIC, payload, 1, false);
-        System.out.println("Changing lane with velocity : " + velocity +
-                ", acceleration : " + acceleration +
-                ", offset : " + offset +
-                ", offsetFromCenter : " + offsetFromCenter);
-    }
-
-
-    public void setEmergency() throws MqttException, InterruptedException {
-        publish(SECOND_TOPIC, emergencySubscription, 1, false);
-        publish(REMOTE_EMERGENCY_TOPIC, "Emergency", 1, false);
-        System.out.println("Emergency : true");
-    }
-    public void undoEmergency() throws MqttException, InterruptedException {
-        publish(SECOND_TOPIC, emergencySubscription, 1, false);
-        publish(REMOTE_EMERGENCY_TOPIC, "!Emergency", 1, false);
-    }
-
-    private void subscribeVehicle(String vehicleID) throws MqttException, InterruptedException {
-        boolean vehicleExists = false;
-        for (String id : VehiclesID){
-            if(id.equals(vehicleID)){
-                vehicleExists = true;
-                break;
-            }
-        }
-        if(!vehicleExists){
-            System.out.println("The vehicle ID : " + vehicleID + " does not exist.");
-            return;
-        }
+    public void subscribeVehicle(String vehicleID) throws MqttException, InterruptedException {
 
         String specificSpeedTopic = "RemoteControl/U/E/vehicles/speed/" + vehicleID;
         String specificLaneTopic = "RemoteControl/U/E/vehicles/laneChange/" + vehicleID;
         String specificLightTopic = "RemoteControl/U/E/vehicles/lights/" + vehicleID;
+        String specificEmergencyTopic = "RemoteControl/U/E/vehicles/emergency/Message/" + vehicleID;
 
-        String oneSpeedSubscription = "{\"type\": \"speedSubscription\", \"payload\": {\"topic\": \"RemoteControl/U/E/vehicles/speed/"
+        String oneSpeedSubscription = "{\"type\": \"speedSubscription\", \"payload\": {\"topic\": \"Emergency/U/E/RemoteControl/+/E/vehicles/speed/"
                 + vehicleID + "\", \"subscribe\": true}}";
-        String oneLaneSubscription = "{\"type\": \"laneSubscription\", \"payload\": {\"topic\": \"RemoteControl/U/E/vehicles/laneChange/"
+        String oneLaneSubscription = "{\"type\": \"laneSubscription\", \"payload\": {\"topic\": \"Emergency/U/E/RemoteControl/+/E/vehicles/laneChange/"
                 + vehicleID + "\", \"subscribe\": true}}";
-        String oneLightSubscription = "{\"type\": \"lightsSubscription\", \"payload\": {\"topic\": \"RemoteControl/U/E/vehicles/connect/"
+        String oneLightSubscription = "{\"type\": \"lightsSubscription\", \"payload\": {\"topic\": \"Emergency/U/E/RemoteControl/+/E/vehicles/lights/"
+                + vehicleID + "\", \"subscribe\": true}}";
+        String oneEmergencySubscription = "{\"type\": \"speedSubscription\", \"payload\": {\"topic\": \"Emergency/U/E/Message/"
                 + vehicleID + "\", \"subscribe\": true}}";
 
         publish("Anki/Vehicles/U/" + vehicleID + "/I", oneSpeedSubscription, 0, false);
-        publish("Anki/Vehicles/U/" + vehicleID + "/I", oneLaneSubscription, 0, false);
-        publish("Anki/Vehicles/U/" + vehicleID + "/I",oneLightSubscription, 0, false);
-
+        System.out.println(vehicleID + " : " + oneSpeedSubscription);
+        Thread.sleep(2000);
+        publish("Anki/Vehicles/U/" + vehicleID + "/I", oneLaneSubscription, 2, false);
+        System.out.println(vehicleID + " : " + oneLaneSubscription);
+        Thread.sleep(2000);
+        publish("Anki/Vehicles/U/" + vehicleID + "/I",oneLightSubscription, 2, false);
+        System.out.println(vehicleID + " : " + oneLightSubscription);
+        Thread.sleep(2000);
+        publish("Anki/Vehicles/U/" + vehicleID + "/I", oneEmergencySubscription, 1, false);
+        System.out.println(vehicleID + " : " + oneEmergencySubscription);
     }
 
-    private void connectID(String vehicleID) throws MqttException, InterruptedException {
-        boolean vehicleExists = false;
-        for (String id : VehiclesID) {
-            if (id.equals(vehicleID)) {
-                vehicleExists = true;
-                break;
-            }
-        }
-        if (!vehicleExists) {
-            System.out.println("The vehicle ID : " + vehicleID + " does not exist.");
-            return;
-        }
+    public void connectID(String vehicleID) throws MqttException, InterruptedException {
         // Specific topic for each vehicle
         String specificConnectTopic = "RemoteControl/U/E/vehicles/connect/" + vehicleID;
         System.out.println("Connect the vehicle " + vehicleID);
@@ -191,21 +146,10 @@ public class RemoteControl {
         Thread.sleep(3000);
         // Confirm the connection
         publish(specificConnectTopic, t, 1, false);
+
     }
 
-    protected void setSpeedTo(String vehicleID, String velocity, String acceleration) throws MqttException, InterruptedException {
-        boolean vehicleExists = false;
-        for (String id : VehiclesID) {
-            if (id.equals(vehicleID)) {
-                vehicleExists = true;
-                break;
-            }
-        }
-
-        if (!vehicleExists) {
-            System.out.println("The vehicle ID : " + vehicleID + " does not exist.");
-            return;
-        }
+    public void setSpeedTo(String vehicleID, String velocity, String acceleration) throws MqttException, InterruptedException {
 
         // Specific topic for speed control of the vehicle
         String specificSpeedTopic = "RemoteControl/U/E/vehicles/speed/" + vehicleID;
@@ -217,21 +161,10 @@ public class RemoteControl {
         // Publish the speed control payload to the specific topic
         publish(specificSpeedTopic, payload, 1, false);
         System.out.println("Changing speed for vehicle " + vehicleID + ": velocity = " + velocity + ", acceleration = " + acceleration);
+        System.out.println(payload);
     }
 
-    public void setLightsTo(String vehicleID, String lightType, String effect, int start, int end, int frequency) throws MqttException {
-        boolean vehicleExists = false;
-        for (String id : VehiclesID) {
-            if (id.equals(vehicleID)) {
-                vehicleExists = true;
-                break;
-            }
-        }
-
-        if (!vehicleExists) {
-            System.out.println("The vehicle ID : " + vehicleID + " does not exist.");
-            return;
-        }
+    public void setLightsTo(String vehicleID, String lightType, String effect, int start, int end, int frequency) throws MqttException, InterruptedException {
 
         // Specific topic for lights control of the vehicle
         String specificLightsTopic = "RemoteControl/U/E/vehicles/lights/" + vehicleID;
@@ -246,21 +179,10 @@ public class RemoteControl {
         // Publish the lights control payload to the specific topic
         publish(specificLightsTopic, payload, 1, false);
         System.out.println(lightType + " light for vehicle " + vehicleID + ": effect = " + effect + ", start = " + start + ", end = " + end + ", frequency = " + frequency);
+        System.out.println(payload);
     }
 
-    public void setLaneTo(String vehicleID, int velocity, int acceleration, double offset, double offsetFromCenter) throws MqttException {
-        boolean vehicleExists = false;
-        for (String id : VehiclesID) {
-            if (id.equals(vehicleID)) {
-                vehicleExists = true;
-                break;
-            }
-        }
-
-        if (!vehicleExists) {
-            System.out.println("The vehicle ID : " + vehicleID + " does not exist.");
-            return;
-        }
+    public void setLaneTo(String vehicleID, int velocity, int acceleration, double offset, double offsetFromCenter) throws MqttException, InterruptedException {
 
         // Specific topic for lane change control of the vehicle
         String specificLaneTopic = "RemoteControl/U/E/vehicles/laneChange/" + vehicleID;
@@ -277,6 +199,7 @@ public class RemoteControl {
                 ", acceleration = " + acceleration +
                 ", offset = " + offset +
                 ", offsetFromCenter = " + offsetFromCenter);
+        System.out.println(payload);
     }
 
 
@@ -295,12 +218,10 @@ public class RemoteControl {
             RemoteControl remote = new RemoteControl();
             remote.discover();
             remote.connectID(VehiclesID[3]);
-            remote.connectID(VehiclesID[4]);
             remote.subscribeVehicle(VehiclesID[3]);
+            remote.connectID(VehiclesID[4]);
             remote.subscribeVehicle(VehiclesID[4]);
-            remote.setSpeedTo(VehiclesID[3],"300","300");
-            remote.setSpeedTo(VehiclesID[4],"400","400");
-
+            System.out.println("Set up done");
         } catch (MqttException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
