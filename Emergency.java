@@ -1,18 +1,15 @@
-package project2;
+package project3;
 
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-
-import java.rmi.Remote;
-import java.util.Objects;
-
-import static project2.RemoteControl.*;
+import static project3.RemoteControl.VehiclesID1;
+import static project3.RemoteControl.VehiclesID2;
 
 public class Emergency {
     private static final String BROKER_URL = "tcp://10.42.0.1:1883";
-    private static final String CLIENT_ID = "EmergencyStopService";
+    private static final String CLIENT_ID = "Emergency";
     protected static final String EMERGENCY_TOPIC = "Emergency/U/E";
-    private static final String REMOTE_TOPIC = "RemoteControl/U/E/vehicles/#";
+    static final String REMOTE_TOPIC = "RemoteControl/U/E/vehicles/#";
     protected static final String REMOTE_EMERGENCY_TOPIC = "RemoteControl/U/E/vehicles/emergency";
     private MqttClient client;
     private static boolean emergency = false;
@@ -34,31 +31,7 @@ public class Emergency {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                if(topic.equals(EMERGENCY_TOPIC + "/Message")) {
-                    return;
-                }
-                String payload = new String(message.getPayload());
-
-                client.subscribe(EMERGENCY_TOPIC + "/Message");
-                client.subscribe(REMOTE_EMERGENCY_TOPIC);
-
-                if(!emergency) {
-                    publish(EMERGENCY_TOPIC + "/" + topic, payload, 1, false);
-                    System.out.println(topic + ": " + payload);
-
-                    if(payload.equals("Emergency")) {
-                        System.out.println(topic + ": " + payload);
-                        emergency = true;
-                    }
-                }
-
-                if(emergency) {
-                    setSpeed("0","2000");
-                    System.out.println(topic + ": " + payload);
-                    if(payload.equals("!Emergency")) {
-                        emergency = false;
-                    }
-                }
+                handleEmergency(VehiclesID2[2], topic, message);
             }
 
             @Override
@@ -66,9 +39,44 @@ public class Emergency {
         });
         client.connect(options);
         client.subscribe(REMOTE_TOPIC);
-        client.subscribe(EMERGENCY_TOPIC + "/Message");
+        for(String id : VehiclesID2) {
+            if(id.equals(VehiclesID2[2])) {
+                client.subscribe(EMERGENCY_TOPIC + "/Message/" + id);
+            }
+        }
     }
 
+    private void handleEmergency(String vehicleID, String topic, MqttMessage message) throws MqttException, InterruptedException {
+        // Avoid infinite loop
+        if(topic.equals(EMERGENCY_TOPIC + "/Message/" + vehicleID)) {
+            return;
+        }
+        System.out.println(vehicleID);
+        String payload = new String(message.getPayload());
+
+        client.subscribe(EMERGENCY_TOPIC + "/Message/" + vehicleID);
+        client.subscribe(REMOTE_EMERGENCY_TOPIC + "/" + vehicleID);
+
+        if(!emergency) {
+            publish(EMERGENCY_TOPIC + "/" + topic, payload, 1, false);
+            System.out.println(topic + ": " + payload);
+
+            if(payload.equals("Emergency" + vehicleID)) {
+                System.out.println(topic + ": " + payload);
+                emergency = true;
+            }
+        }
+
+        if(emergency) {
+            setSpeed(vehicleID, "0","2000");
+            setLights(vehicleID, "frontRed", "flash", 0, 15, 255);
+            setLights(vehicleID, "engineRed", "flash", 0, 15, 255);
+            System.out.println(topic + ": " + payload);
+            if(payload.equals("!Emergency" + vehicleID)) {
+                emergency = false;
+            }
+        }
+    }
     // Publish to any topic
     private void publish(String topic, String message, int qos, boolean retained) throws MqttException {
         MqttMessage mqttMessage = new MqttMessage(message.getBytes());
@@ -77,10 +85,18 @@ public class Emergency {
         client.publish(topic, mqttMessage);
     }
 
-    private void setSpeed(String velocity, String acceleration) throws MqttException, InterruptedException {
+    private void setSpeed(String vehicleID, String velocity, String acceleration) throws MqttException, InterruptedException {
         String payload = String.format("{\"velocity\":\"%s\",\"acceleration\":\"%s\"}", velocity, acceleration);
-        publish(EMERGENCY_TOPIC + "/Message", payload, 1, false);
-        System.out.println("Changing speed : " + velocity + ", " + acceleration);
+        publish(EMERGENCY_TOPIC + "/Message/speed/" + vehicleID, payload, 1, false);
+        System.out.println("Changing speed to : " + vehicleID + ". New parameters : " + velocity + ", " + acceleration);
+    }
+    private void setLights(String vehicleID, String lightType, String effect, int start, int end, int frequency) throws MqttException, InterruptedException {
+        String payload = String.format("{\"%s\":{\"effect\":\"%s\",\"start\":%d,\"end\":%d,\"frequency\":%d}}",
+                lightType, effect, start, end, frequency
+        );
+        publish(EMERGENCY_TOPIC + "/Message/lights/" + vehicleID, payload, 1, false);
+        System.out.println("Changing light to : " + vehicleID + ". New parameters : " + lightType + ", " + effect + ", " + start+ ", " + end + ", " + frequency);
+
     }
 
     public static void main(String[] args) {

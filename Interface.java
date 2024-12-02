@@ -15,8 +15,14 @@ public class Interface {
                 remoteControl = new RemoteControl();
 
                 String[] vehicleOptions = {
-                        "825D320F", "1C39200D", "64CB5600", "13705309",
-                        "DDF65009", "847FF007", "B75C320F", "93EC5112"
+                        "3F960001", // Yellow car
+                        "94D75600", // White car with sticker db443e1e4
+                        "A9450008", // Black-red car
+                        "8EF0310F", // Dodge car
+                        "595D320F", // White car with orange sticker
+                        "69CAA20E", // Pick-up Hummer
+                        "045F302F", // White car
+                        "ECE95112"  // White car
                 };
 
                 JFrame frame = new JFrame("Remote Control Interface");
