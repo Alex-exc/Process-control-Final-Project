@@ -1,8 +1,9 @@
-package project2;
+package project3;
+
+import org.eclipse.paho.client.mqttv3.MqttException;
 
 import javax.swing.*;
 import java.awt.*;
-import org.eclipse.paho.client.mqttv3.MqttException;
 
 public class Interface {
 
@@ -13,14 +14,25 @@ public class Interface {
             try {
                 remoteControl = new RemoteControl();
 
-                String[] LightOptions = {"frontGreen", "frontRed", "frontBlue", "tail"};
-                String[] LightEffectOptions = {"pulse", "flash"};
+                String[] vehicleOptions = {
+                        "825D320F", // White car
+                        "1C39200D", // White car with white sticker
+                        "64CB5600", // White car
+                        "13705309", // Dodge car
+                        "DDF65009", // Blue car
+                        "847FF007", // Dark Green - Orange car
+                        "B75C320F", // White car
+                        "93EC5112"  // White car with blue sticker
+                };
 
                 JFrame frame = new JFrame("Remote Control Interface");
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 frame.setSize(500, 600);
-                frame.setLayout(new GridLayout(5, 1, 10, 10));
+                frame.setLayout(new GridLayout(6, 1, 10, 10));
                 frame.getContentPane().setBackground(Color.PINK);
+
+                // Vehicle selection
+                JPanel vehicleSelection = createVehicleSelection(vehicleOptions);
 
                 // Speed control section
                 JPanel speedControl = createSpeedControl();
@@ -36,6 +48,7 @@ public class Interface {
 
                 JPanel notEmergencyControl = createNotEmergency();
 
+                frame.add(vehicleSelection);
                 frame.add(speedControl);
                 frame.add(lightControl);
                 frame.add(laneControl);
@@ -47,6 +60,28 @@ public class Interface {
                 e.printStackTrace();
             }
         });
+    }
+
+    private static String selectedVehicleID = null;
+
+    private static JPanel createVehicleSelection(String[] vehicleOptions) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new FlowLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Select Vehicle"));
+        panel.setBackground(new Color(255, 230, 240));
+
+        JLabel vehicleLabel = new JLabel("Vehicle ID:");
+        JComboBox<String> vehicleComboBox = new JComboBox<>(vehicleOptions);
+
+        vehicleComboBox.addActionListener(e -> {
+            selectedVehicleID = (String) vehicleComboBox.getSelectedItem();
+            System.out.println("Selected Vehicle: " + selectedVehicleID);
+        });
+
+        panel.add(vehicleLabel);
+        panel.add(vehicleComboBox);
+
+        return panel;
     }
 
     private static JPanel createSpeedControl() {
@@ -66,14 +101,18 @@ public class Interface {
         JButton setSpeedButton = new JButton("Set Speed");
         setSpeedButton.setBackground(new Color(255, 102, 178));
         setSpeedButton.setForeground(Color.BLACK);
-        setSpeedButton.setText("Apply change");
 
         setSpeedButton.addActionListener(e -> {
+            if (selectedVehicleID == null) {
+                JOptionPane.showMessageDialog(null, "Please select a vehicle first!");
+                return;
+            }
             String velocity = (String) velocityComboBox.getSelectedItem();
             String acceleration = (String) accelerationComboBox.getSelectedItem();
             try {
-                System.out.println("Setting Speed: Velocity = " + velocity + ", Acceleration = " + acceleration);
-                remoteControl.setSpeed(velocity, acceleration);
+                System.out.println("Setting Speed: VehicleID = " + selectedVehicleID +
+                        ", Velocity = " + velocity + ", Acceleration = " + acceleration);
+                remoteControl.setSpeedTo(selectedVehicleID, velocity, acceleration);
             } catch (MqttException | InterruptedException ex) {
                 ex.printStackTrace();
             }
@@ -90,13 +129,13 @@ public class Interface {
     }
 
     private static JPanel createLightControl() {
+        String[] lightOptions = {"frontGreen", "frontRed", "frontBlue", "tail"};
+        String[] effectOptions = {"pulse", "flash"};
+
         JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(3, 2, 5, 5));
         panel.setBorder(BorderFactory.createTitledBorder("Lights Control"));
         panel.setBackground(new Color(255, 230, 240));
-
-        String[] lightOptions = {"frontGreen", "frontRed", "frontBlue", "tail"};
-        String[] effectOptions = {"pulse", "flash"};
 
         JLabel lightTypeLabel = new JLabel("Light Type:");
         JComboBox<String> lightTypeComboBox = new JComboBox<>(lightOptions);
@@ -107,17 +146,17 @@ public class Interface {
         JButton setLightButton = new JButton("Set Lights");
         setLightButton.setBackground(new Color(255, 102, 178));
         setLightButton.setForeground(Color.BLACK);
-        setLightButton.setText("Apply change");
 
-        // Action sur le bouton
         setLightButton.addActionListener(e -> {
+            if (selectedVehicleID == null) {
+                JOptionPane.showMessageDialog(null, "Please select a vehicle first!");
+                return;
+            }
             String lightType = (String) lightTypeComboBox.getSelectedItem();
             String effect = (String) effectComboBox.getSelectedItem();
             try {
-                System.out.println("Setting Lights: Type = " + lightType + ", Effect = " + effect);
-                // Appel de la méthode RemoteControl
-                remoteControl.setLights(lightType, effect, 0, 100, 10);
-            } catch (MqttException ex) {
+                remoteControl.setLightsTo(selectedVehicleID, lightType, effect, 0, 100, 10);
+            } catch (MqttException | InterruptedException ex) {
                 ex.printStackTrace();
             }
         });
@@ -131,7 +170,6 @@ public class Interface {
 
         return panel;
     }
-
 
     private static JPanel createLaneControl() {
         String[] speedOptions = {"0", "100", "200", "300", "400", "500"};
@@ -158,25 +196,23 @@ public class Interface {
         JButton setLaneButton = new JButton("Set Lane");
         setLaneButton.setBackground(new Color(255, 102, 178));
         setLaneButton.setForeground(Color.BLACK);
-        setLaneButton.setText("Apply change");
 
         setLaneButton.addActionListener(e -> {
+            if (selectedVehicleID == null) {
+                JOptionPane.showMessageDialog(null, "Please select a vehicle first!");
+                return;
+            }
             String velocity = (String) velocityComboBox.getSelectedItem();
             String acceleration = (String) accelerationComboBox.getSelectedItem();
             String offset = (String) offsetComboBox.getSelectedItem();
             String offsetFromCenter = (String) offsetCenterComboBox.getSelectedItem();
             try {
-                System.out.println("Changing Lane: Velocity = " + velocity +
-                        ", Acceleration = " + acceleration +
-                        ", Offset = " + offset +
-                        ", Offset From Center = " + offsetFromCenter);
-                remoteControl.setLane(
+                remoteControl.setLaneTo(selectedVehicleID,
                         Integer.parseInt(velocity),
                         Integer.parseInt(acceleration),
                         Double.parseDouble(offset),
-                        Double.parseDouble(offsetFromCenter)
-                );
-            } catch (MqttException ex) {
+                        Double.parseDouble(offsetFromCenter));
+            } catch (MqttException | InterruptedException ex) {
                 ex.printStackTrace();
             }
         });
@@ -195,7 +231,6 @@ public class Interface {
         return panel;
     }
 
-
     private static JPanel createEmergencyControl() {
         JPanel panel = new JPanel();
         panel.setLayout(new FlowLayout());
@@ -205,21 +240,24 @@ public class Interface {
         JButton emergencyButton = new JButton("Activate Emergency Stop");
         emergencyButton.setBackground(new Color(255, 102, 178));
         emergencyButton.setForeground(Color.RED);
+
         emergencyButton.addActionListener(e -> {
-            System.out.println("Emergency Stop Activated");
+            if (selectedVehicleID == null) {
+                JOptionPane.showMessageDialog(null, "Please select a vehicle first!");
+                return;
+            }
             try {
-                // setEmergency() sends "Emergency" in RemoteControl
-                remoteControl.setEmergency();
+                remoteControl.setEmergencyTo(selectedVehicleID);
             } catch (MqttException | InterruptedException ex) {
                 ex.printStackTrace();
             }
         });
 
         panel.add(emergencyButton);
-        panel.add(new JLabel());
 
         return panel;
     }
+
     private static JPanel createNotEmergency() {
         JPanel panel = new JPanel();
         panel.setLayout(new FlowLayout());
@@ -229,16 +267,21 @@ public class Interface {
         JButton notEmergencyButton = new JButton("Deactivate Emergency Stop");
         notEmergencyButton.setBackground(new Color(255, 102, 178));
         notEmergencyButton.setForeground(Color.GREEN);
+
         notEmergencyButton.addActionListener(e -> {
-            System.out.println("Emergency Stop Deactivated");
+            if (selectedVehicleID == null) {
+                JOptionPane.showMessageDialog(null, "Please select a vehicle first!");
+                return;
+            }
             try {
-                remoteControl.undoEmergency();
+                remoteControl.undoEmergencyTo(selectedVehicleID);
             } catch (MqttException | InterruptedException ex) {
                 ex.printStackTrace();
             }
         });
-        panel.add(notEmergencyButton);
-        return panel;
 
+        panel.add(notEmergencyButton);
+
+        return panel;
     }
 }
