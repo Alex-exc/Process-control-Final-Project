@@ -1,16 +1,16 @@
-package project3;
+package project3.utilities;
 
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-import static project3.Emergency.REMOTE_EMERGENCY_TOPIC;
+import static project3.Services.Emergency.REMOTE_EMERGENCY_TOPIC;
 
 public class RemoteControl {
 
     private static final String BROKER_URL = "tcp://10.42.0.1:1883";
     private static final String CLIENT_ID = "RemoteControl";
 
-    protected static final String[] VehiclesID1 = {
+    public static final String[] VehiclesID1 = {
             "825D320F", // White car
             "1C39200D", // White car with white sticker
             "64CB5600", // White car
@@ -145,7 +145,11 @@ public class RemoteControl {
         Thread.sleep(2000);
         publish("Anki/Vehicles/U/" + vehicleID + "/I", oneLightEmergencySubscription, 1, false);
         System.out.println(vehicleID + " : " + oneLightEmergencySubscription);
-        System.out.println("Remote setup done");
+        System.out.println("Remote set up done");
+    }
+
+    public void subscribeCoordinatesOf(String vehicleID) throws MqttException, InterruptedException {
+
     }
 
     public void connectID(String vehicleID) throws MqttException, InterruptedException {
@@ -201,9 +205,10 @@ public class RemoteControl {
             System.out.println("Connected to broker URL : " + BROKER_URL);
             RemoteControl remote = new RemoteControl();
             remote.discover();
-            remote.connectID(VehiclesID1[3]);
+            remote.connectAll();
             Thread.sleep(2000);
             remote.subscribeVehicle(VehiclesID1[3]);
+            remote.subscribeVehicle(VehiclesID1[7]);
             System.out.println("Set up done");
         } catch (MqttException e) {
             e.printStackTrace();

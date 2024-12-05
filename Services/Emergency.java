@@ -1,18 +1,21 @@
-package project3;
+package project3.Services;
 
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-import static project3.RemoteControl.VehiclesID1;
-import static project3.RemoteControl.VehiclesID2;
+
+import static project3.utilities.RemoteControl.VehiclesID1;
 
 public class Emergency {
     private static final String BROKER_URL = "tcp://10.42.0.1:1883";
     private static final String CLIENT_ID = "Emergency";
-    protected static final String EMERGENCY_TOPIC = "Emergency/U/E";
+    public static final String EMERGENCY_TOPIC = "Emergency/U/E";
     static final String REMOTE_TOPIC = "RemoteControl/U/E/vehicles/#";
-    protected static final String REMOTE_EMERGENCY_TOPIC = "RemoteControl/U/E/vehicles/emergency";
+    public static final String REMOTE_EMERGENCY_TOPIC = "RemoteControl/U/E/vehicles/emergency";
     private MqttClient client;
-    private static boolean emergency = false;
+    public static boolean emergency = false;
+
+    protected static final String EMERGENCY_COORDINATES_TOPIC = "RemoteControl/U/E/vehicles/coordinates";
+
 
     public Emergency() throws MqttException {
         connectToBroker();
@@ -31,7 +34,7 @@ public class Emergency {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                handleEmergency(VehiclesID1[3], topic, message);
+                handleEmergency(VehiclesID1[7], topic, message);
             }
 
             @Override
@@ -40,7 +43,7 @@ public class Emergency {
         client.connect(options);
         client.subscribe(REMOTE_TOPIC);
         for(String id : VehiclesID1) {
-            if(id.equals(VehiclesID1[5])) {
+            if(id.equals(VehiclesID1[7])) {
                 client.subscribe(EMERGENCY_TOPIC + "/Message/" + id);
             }
         }

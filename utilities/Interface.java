@@ -1,4 +1,4 @@
-package project3;
+package project3.utilities;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
 
