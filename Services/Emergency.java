@@ -3,7 +3,7 @@ package project3.Services;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-import static project3.utilities.RemoteControl.VehiclesID1;
+import static project3.Utilities.RemoteControl.VehiclesID1;
 
 public class Emergency {
     private static final String BROKER_URL = "tcp://10.42.0.1:1883";
@@ -34,7 +34,8 @@ public class Emergency {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                handleEmergency(VehiclesID1[7], topic, message);
+                handleEmergency(VehiclesID1[7
+                        ], topic, message);
             }
 
             @Override

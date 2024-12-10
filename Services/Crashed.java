@@ -6,7 +6,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static project3.utilities.RemoteControl.VehiclesID1;
+import static project3.Utilities.RemoteControl.VehiclesID1;
 
 public class Crashed {
 
@@ -69,21 +69,6 @@ public class Crashed {
         return trackID;
     }
 
-
-    private String extractDirection(String topic, MqttMessage message, String regex) throws MqttException {
-        String direction = "";
-        if(topic.equals(TRACK_CRASHED_TOPIC)) {
-            String payload = new String(message.getPayload());
-            Pattern pattern = Pattern.compile(regex);
-            Matcher matcher = pattern.matcher(payload);
-            if (matcher.find()) {
-                direction = matcher.group(1);
-                System.out.println(direction);
-            }
-            return direction;
-        }
-        return direction;
-    }
 
     // Publish to any topic
     private void publish(String topic, String message, int qos, boolean retained) throws MqttException {

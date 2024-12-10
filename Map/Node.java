@@ -11,6 +11,12 @@ class Node {
     double x; // Coordinate x
     double y; // Coordinate y
 
+    enum shapeNode {
+        T,
+        I,
+        S
+    }
+
     public Node(int id, double x, double y) {
         this.id = id;
         this.x = x;
@@ -23,8 +29,10 @@ class Node {
     public double getY() {
         return y;
     }
-    public double getID(){
+    public int getID(){
         return id;
     }
+
+
 }
 

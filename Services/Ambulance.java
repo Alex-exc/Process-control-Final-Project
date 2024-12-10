@@ -6,8 +6,9 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static project3.Services.Crashed.directionRegex;
 import static project3.Services.Crashed.trackRegex;
-import static project3.utilities.RemoteControl.VehiclesID1;
+import static project3.Utilities.RemoteControl.VehiclesID1;
 
 public class Ambulance {
 
@@ -18,6 +19,7 @@ public class Ambulance {
 
     // Topics
     private static final String EMERGENCY_CURRENT_AMBULANCE_LOCATION = "Emergency/U/E/Location/Ambulance";
+    private static final String EMERGENCY_CURRENT_AMBULANCE_DIRECTION = "Emergency/U/E/Direction/Ambulance";
     private static String AMBULANCE_TOPIC = "Anki/Vehicles/U/" + VehiclesID1[3]+ "/E/track";
     private static String[] AMBULANCES_TOPICS = {
             "Anki/Vehicles/U/" + VehiclesID1[1]+ "/E/track",
@@ -49,6 +51,8 @@ public class Ambulance {
                 int ambulanceTrackID = extractTrackID(topic, message, trackRegex);
                 System.out.println("Ambulance initial position :" + ambulanceTrackID);
                 publish(EMERGENCY_CURRENT_AMBULANCE_LOCATION, String.valueOf(ambulanceTrackID), 1, false);
+                String ambulanceDirection = extractDirection(topic, message, directionRegex);
+                publish(EMERGENCY_CURRENT_AMBULANCE_DIRECTION, String.valueOf(ambulanceDirection), 1, false);
             }
 
             @Override
@@ -70,6 +74,21 @@ public class Ambulance {
             return trackID;
         }
         return trackID;
+    }
+
+    private String extractDirection(String topic, MqttMessage message, String regex) throws MqttException {
+        String direction = "";
+        if(topic.equals(AMBULANCE_TOPIC)) {
+            String payload = new String(message.getPayload());
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(payload);
+            if (matcher.find()) {
+                direction = matcher.group(1);
+                System.out.println(direction);
+            }
+            return direction;
+        }
+        return direction;
     }
 
     // Publish to any topic

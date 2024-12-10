@@ -4,6 +4,8 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import project3.Map.Graph;
 
+import java.util.List;
+
 public class GPS {
 
     // Broker
@@ -15,14 +17,18 @@ public class GPS {
 
     private static int ambulancePosition = 0;
     private static int crashedPosition = 0;
+    private static String direction;
 
     // Topics
     protected String EMERGENCY_CURRENT_AMBULANCE_LOCATION = "Emergency/U/E/Location/Ambulance";
+    protected String EMERGENCY_CURRENT_AMBULANCE_DIRECTION = "Emergency/U/E/Direction/Ambulance";
     protected String EMERGENCY_CURRENT_CRASHED_LOCATION = "Emergency/U/E/Location/Crashed";
 
-    String[] locationsArrayTopics = {
+
+    String[] Topics = {
             EMERGENCY_CURRENT_AMBULANCE_LOCATION,
-            EMERGENCY_CURRENT_CRASHED_LOCATION
+            EMERGENCY_CURRENT_CRASHED_LOCATION,
+            EMERGENCY_CURRENT_AMBULANCE_DIRECTION
     };
 
 
@@ -56,15 +62,19 @@ public class GPS {
                     ambulancePosition = Integer.parseInt(payload);
                     System.out.println("ambulancePosition = " + ambulancePosition);
                 }
-
+                // Crashed car current position
                 if (topic.equals(EMERGENCY_CURRENT_CRASHED_LOCATION)) {
                     crashedPosition = Integer.parseInt(payload);
                     System.out.println("crashedPosition = " + crashedPosition);
                 }
+                if(topic.equals(EMERGENCY_CURRENT_AMBULANCE_DIRECTION)){
+                    direction = payload;
+                }
                 if (ambulancePosition == 0 || crashedPosition == 0) {
                     System.out.println("Error, one of the nodes does not exist");
                 } else {
-                    graph.findAllPaths(ambulancePosition, crashedPosition);
+                    List<Integer> shortestPath = graph.findShortestPathBetween(ambulancePosition, crashedPosition);
+                    System.out.println("Shortest path from " + ambulancePosition + " to " + crashedPosition + ": " + shortestPath);
                 }
             }
 
@@ -72,7 +82,7 @@ public class GPS {
             public void deliveryComplete(IMqttDeliveryToken token) {}
         });
         client.connect(options);
-        client.subscribe(locationsArrayTopics);
+        client.subscribe(Topics);
     }
 
     public static void main(String[] args) {

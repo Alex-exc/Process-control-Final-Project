@@ -1,4 +1,4 @@
-package project3.utilities;
+package project3.Utilities;
 
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
