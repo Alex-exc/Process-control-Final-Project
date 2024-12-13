@@ -1,12 +1,19 @@
 package project3.Map;
 
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+
 import java.util.*;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static project3.Services.Ambulance.GET_AMBULANCE_LOCATION_TOPIC;
 
 public class Graph {
 
-    static Map<Integer, Node> nodes = new HashMap<>(); // Contains the vertices and their coordinates
-    Map<Integer, List<Integer>> edges = new HashMap<>(); // Edges between the vertices
+    public static Map<Integer, Node> nodes = new HashMap<>(); // Contains the vertices and their coordinates
+    public static Map<Integer, List<Integer>> edges = new HashMap<>(); // Edges between the vertices
 
 
     public void addNode(int id, double x, double y) {
@@ -87,7 +94,7 @@ public class Graph {
         }
         return direction;
     }
-    private static List<Node> getNodes(List<Integer> path) {
+    public static List<Node> getNodes(List<Integer> path) {
         List<Node> nodeList = new ArrayList<>();
         for (int id : path) {
             Node node = nodes.get(id); // Get the node id
@@ -101,6 +108,7 @@ public class Graph {
     }
 
     private List<String> validatePath(List<Integer> path) {
+
         List<Node> nodes = getNodes(path);
         List<String> directions = new ArrayList<>();
 
@@ -161,6 +169,21 @@ public class Graph {
         return directions; // Valid directions
     }
 
+    public String extractDirection(String topic, MqttMessage message, String regex) throws MqttException {
+        String direction = "";
+        if(topic.equals(GET_AMBULANCE_LOCATION_TOPIC)) {
+            String payload = new String(message.getPayload());
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(payload);
+            if (matcher.find()) {
+                direction = matcher.group(1);
+                System.out.println(direction);
+            }
+            return direction;
+        }
+        return direction;
+    }
+
     public void initializeGraph() {
         // If id start with 1, then consider it as zone 1 as a set
         addNode(1, 0, 1);
@@ -219,7 +242,7 @@ public class Graph {
         addNode(16, 4, 0);
 
         // Node not really useful here
-        addNode(17, 2, 3);
+        addNode(0, 2, 3);
 
         addNode(20, 1, 0);
         addNode(21, 3, 0);
@@ -280,8 +303,10 @@ public class Graph {
             addEdge(602,302);
             addEdge(302,25);
 
-            // Edge 22-23
-            addEdge(22,23);
+            // Intersection 17 is ID 0
+            addEdge(22,0);
+            addEdge(0,23);
+
 
         // Intersection 19
         addEdge(15,1902);
@@ -322,7 +347,7 @@ public class Graph {
         graph.initializeGraph();
 
         // Find the path
-        List<Integer> validPath = graph.findShortestPathBetween(14, 5); // Change the input to test
+        List<Integer> validPath = graph.findShortestPathBetween(25, 6); // Change the input to test
         // 402 to 601 is a good example
         // 13 to 23 too
 

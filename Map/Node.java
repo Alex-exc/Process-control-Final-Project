@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 // Represents a vertex
-class Node {
+public class Node {
     int id;
     double x; // Coordinate x
     double y; // Coordinate y

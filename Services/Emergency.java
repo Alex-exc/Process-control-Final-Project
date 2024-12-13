@@ -4,18 +4,22 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import static project3.Utilities.RemoteControl.VehiclesID1;
+import static project3.Utilities.RemoteControl.VehiclesID2;
 
 public class Emergency {
+
+    // Broker set up
+    private MqttClient client;
     private static final String BROKER_URL = "tcp://10.42.0.1:1883";
     private static final String CLIENT_ID = "Emergency";
+
+    // Used topics
     public static final String EMERGENCY_TOPIC = "Emergency/U/E";
-    static final String REMOTE_TOPIC = "RemoteControl/U/E/vehicles/#";
+    public static final String REMOTE_TOPIC = "RemoteControl/U/E/vehicles/#";
     public static final String REMOTE_EMERGENCY_TOPIC = "RemoteControl/U/E/vehicles/emergency";
-    private MqttClient client;
+
+    // Variables
     public static boolean emergency = false;
-
-    protected static final String EMERGENCY_COORDINATES_TOPIC = "RemoteControl/U/E/vehicles/coordinates";
-
 
     public Emergency() throws MqttException {
         connectToBroker();
@@ -34,8 +38,7 @@ public class Emergency {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                handleEmergency(VehiclesID1[7
-                        ], topic, message);
+                handleEmergency(VehiclesID1[7], topic, message);
             }
 
             @Override

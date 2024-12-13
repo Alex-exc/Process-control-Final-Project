@@ -3,32 +3,35 @@ package project3.Services;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import project3.Map.Graph;
+import project3.Map.Node;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import static project3.Map.Graph.getDirection;
+import static project3.Map.Graph.getNodes;
+import static project3.Services.Ambulance.AMBULANCE_CAN_USE_PATH;
+import static project3.Services.Ambulance.EXTRACTED_AMBULANCE_LOCATION_TOPIC;
+import static project3.Utilities.RemoteControl.VehiclesID1;
 
 public class GPS {
 
-    // Broker
+    // Broker set up
     MqttClient client;
     private static final String BROKER_URL = "tcp://10.42.0.1:1883";
     private static final String CLIENT_ID = "GPS";
 
-    // Position
-
-    private static int ambulancePosition = 0;
-    private static int crashedPosition = 0;
-    private static String direction;
+    // Variables
+    private int ambulancePosition;
+    private final int crashedPosition = 6;
+    private boolean isPathSent = false;
 
     // Topics
-    protected String EMERGENCY_CURRENT_AMBULANCE_LOCATION = "Emergency/U/E/Location/Ambulance";
-    protected String EMERGENCY_CURRENT_AMBULANCE_DIRECTION = "Emergency/U/E/Direction/Ambulance";
-    protected String EMERGENCY_CURRENT_CRASHED_LOCATION = "Emergency/U/E/Location/Crashed";
-
+    public static String GPS_DIRECTION = "GPS/U/E/Direction";
+    public static String GPS_NODES = "GPS/U/E/Nodes";
 
     String[] Topics = {
-            EMERGENCY_CURRENT_AMBULANCE_LOCATION,
-            EMERGENCY_CURRENT_CRASHED_LOCATION,
-            EMERGENCY_CURRENT_AMBULANCE_DIRECTION
+            EXTRACTED_AMBULANCE_LOCATION_TOPIC
     };
 
 
@@ -57,24 +60,25 @@ public class GPS {
                 String payload = new String(message.getPayload());
                 System.out.println(topic + " : " + payload);
 
+                List<String> directions = new ArrayList<>();
+                ambulancePosition = 2;
+
                 // Ambulance current position
-                if(topic.equals(EMERGENCY_CURRENT_AMBULANCE_LOCATION)) {
+                if(topic.equals(EXTRACTED_AMBULANCE_LOCATION_TOPIC)) {
                     ambulancePosition = Integer.parseInt(payload);
                     System.out.println("ambulancePosition = " + ambulancePosition);
+
                 }
-                // Crashed car current position
-                if (topic.equals(EMERGENCY_CURRENT_CRASHED_LOCATION)) {
-                    crashedPosition = Integer.parseInt(payload);
-                    System.out.println("crashedPosition = " + crashedPosition);
+                if(!isPathSent){
+                sendPath(directions, ambulancePosition, crashedPosition);
+                isPathSent = true;
                 }
-                if(topic.equals(EMERGENCY_CURRENT_AMBULANCE_DIRECTION)){
-                    direction = payload;
-                }
-                if (ambulancePosition == 0 || crashedPosition == 0) {
-                    System.out.println("Error, one of the nodes does not exist");
-                } else {
-                    List<Integer> shortestPath = graph.findShortestPathBetween(ambulancePosition, crashedPosition);
-                    System.out.println("Shortest path from " + ambulancePosition + " to " + crashedPosition + ": " + shortestPath);
+
+                if(isPathSent){
+                    System.out.println("Path sent, gps is stopped");
+                    if(payload.equals("NotUsable") && topic.equals(AMBULANCE_CAN_USE_PATH)){
+                        isPathSent = false;
+                    }
                 }
             }
 
@@ -83,6 +87,30 @@ public class GPS {
         });
         client.connect(options);
         client.subscribe(Topics);
+    }
+
+    private void sendPath(List<String> directions, int ambulancePosition, int crashedPosition) throws MqttException {
+        List<Integer> shortestPath = graph.findShortestPathBetween(ambulancePosition, crashedPosition);
+
+        // Prints the nodes and the directions
+        List<Node> nodes = getNodes(shortestPath);
+        for (int i = 0; i < nodes.size() - 1; i++) {
+            directions.add(getDirection(nodes.get(i), nodes.get(i + 1)));
+        }
+
+        publish(GPS_NODES, shortestPath.toString(), 1,false);
+        System.out.println("Shortest path from " + ambulancePosition + " to " + crashedPosition + ": " + shortestPath);
+
+        publish(GPS_DIRECTION, directions.toString(), 1,false);
+        System.out.println("Directions: " + directions);
+    }
+
+    // Publish to any topic
+    private void publish(String topic, String message, int qos, boolean retained) throws MqttException {
+        MqttMessage mqttMessage = new MqttMessage(message.getBytes());
+        mqttMessage.setQos(qos);
+        mqttMessage.setRetained(retained);
+        client.publish(topic, mqttMessage);
     }
 
     public static void main(String[] args) {

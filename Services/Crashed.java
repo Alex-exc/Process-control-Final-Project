@@ -7,16 +7,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static project3.Utilities.RemoteControl.VehiclesID1;
+import static project3.Utilities.RemoteControl.VehiclesID2;
 
 public class Crashed {
 
     // Broker
-    MqttClient client;
+    private MqttClient client;
     public static String BROKER_URL = "tcp://10.42.0.1:1883";
-    private static final String CLIENT_ID = "Map";
+    private static final String CLIENT_ID = "Crashed";
 
     // Topics
-    public static String TRACK_CRASHED_TOPIC = "Anki/Vehicles/U/" + VehiclesID1[7]+ "/E/track";
+    public static String TRACK_CRASHED_TOPIC = "Anki/Vehicles/U/" + VehiclesID1[3]+ "/E/track";
     public String EMERGENCY_CURRENT_CRASHED_LOCATION = "Emergency/U/E/Location/Crashed";
 
     // Regex
@@ -43,7 +44,7 @@ public class Crashed {
 
                 int crashedCarTrackID = extractTrackID(topic, message, trackRegex);
                 System.out.println("Crashed car at ID : " + crashedCarTrackID);
-                publish(EMERGENCY_CURRENT_CRASHED_LOCATION, String.valueOf(crashedCarTrackID), 1, false);
+                publish(EMERGENCY_CURRENT_CRASHED_LOCATION, String.valueOf(6), 1, false);
             }
 
             @Override

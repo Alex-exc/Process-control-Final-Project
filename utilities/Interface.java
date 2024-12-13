@@ -85,7 +85,7 @@ public class Interface {
     }
 
     private static JPanel createSpeedControl() {
-        String[] speedOptions = {"0", "100", "200", "300", "400", "500"};
+        String[] speedOptions = {"0", "100", "200", "250", "300", "400", "500"};
 
         JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(3, 2, 5, 5));
@@ -94,9 +94,11 @@ public class Interface {
 
         JLabel velocityLabel = new JLabel("Velocity:");
         JComboBox<String> velocityComboBox = new JComboBox<>(speedOptions);
+        velocityComboBox.setSelectedItem("250"); // Set default value
 
         JLabel accelerationLabel = new JLabel("Acceleration:");
         JComboBox<String> accelerationComboBox = new JComboBox<>(speedOptions);
+        accelerationComboBox.setSelectedItem("500"); // Set default value
 
         JButton setSpeedButton = new JButton("Set Speed");
         setSpeedButton.setBackground(new Color(255, 102, 178));
@@ -127,6 +129,7 @@ public class Interface {
 
         return panel;
     }
+
 
     private static JPanel createLightControl() {
         String[] lightOptions = {"frontGreen", "frontRed", "frontBlue", "tail"};
@@ -172,7 +175,7 @@ public class Interface {
     }
 
     private static JPanel createLaneControl() {
-        String[] speedOptions = {"0", "100", "200", "300", "400", "500"};
+        String[] speedOptions = {"0", "100", "200", "250", "300", "400", "500"};
         String[] offsetOptions = {"-90", "-80", "-70", "-60", "-50", "-40", "-30", "-20", "-10", "10", "20", "30", "40", "50", "60", "70", "80", "90"};
         String[] offsetFromCenterOptions = {"-50", "-40", "-30", "-20", "-10", "0", "10", "20", "30", "40", "50"};
 
@@ -183,15 +186,18 @@ public class Interface {
 
         JLabel velocityLabel = new JLabel("Velocity:");
         JComboBox<String> velocityComboBox = new JComboBox<>(speedOptions);
+        velocityComboBox.setSelectedItem("250"); // Set default value
 
         JLabel accelerationLabel = new JLabel("Acceleration:");
         JComboBox<String> accelerationComboBox = new JComboBox<>(speedOptions);
+        accelerationComboBox.setSelectedItem("500"); // Set default value
 
         JLabel offsetLabel = new JLabel("Offset:");
         JComboBox<String> offsetComboBox = new JComboBox<>(offsetOptions);
 
         JLabel offsetCenterLabel = new JLabel("Offset From Center:");
         JComboBox<String> offsetCenterComboBox = new JComboBox<>(offsetFromCenterOptions);
+        offsetCenterComboBox.setSelectedItem("0"); // Set default value
 
         JButton setLaneButton = new JButton("Set Lane");
         setLaneButton.setBackground(new Color(255, 102, 178));
@@ -212,6 +218,7 @@ public class Interface {
                         Integer.parseInt(acceleration),
                         Double.parseDouble(offset),
                         Double.parseDouble(offsetFromCenter));
+                System.out.println(velocity + " " + acceleration + " " + offset + " " + offsetFromCenter);
             } catch (MqttException | InterruptedException ex) {
                 ex.printStackTrace();
             }
@@ -230,6 +237,7 @@ public class Interface {
 
         return panel;
     }
+
 
     private static JPanel createEmergencyControl() {
         JPanel panel = new JPanel();

@@ -21,7 +21,7 @@ public class RemoteControl {
             "93EC5112"  // White car with blue sticker
     };
 
-    protected static final String[] VehiclesID2 = {
+    public static final String[] VehiclesID2 = {
             "3F960001", // Yellow car
             "94D75600", // White car with sticker db443e1e4
             "A9450008", // Black-red car
@@ -34,13 +34,13 @@ public class RemoteControl {
 
     // Discover and connect
     private static final String FIRST_TOPIC = "Anki/Hosts/U/hyperdrive/I";
-        private static final String DISCOVER_SUBSCRIPTION_TOPIC = "RemoteControl/U/E/hosts/discover";
+    private static final String DISCOVER_SUBSCRIPTION_TOPIC = "RemoteControl/U/E/hosts/discover";
 
     protected static final String SECOND_TOPIC = "Anki/Vehicles/U/I";
-        private static final String CONNECT_SUBSCRIPTION_TOPIC = "RemoteControl/U/E/vehicles/connect/all";
-        // payload for connexion
-        private static final String f = "value : false";
-        private static final String t = "value : true";
+    protected static final String CONNECT_SUBSCRIPTION_TOPIC = "RemoteControl/U/E/vehicles/connect/all";
+    // payload for connexion
+    private static final String f = "value : false";
+    private static final String t = "value : true";
 
     // Vehicles parameters in RemoteControl
     protected static final String SPEED_TOPIC = "RemoteControl/U/E/vehicles/speed/E";
@@ -49,7 +49,6 @@ public class RemoteControl {
 
     // Alternative topics
     protected static final String ALTERNATIVE_TOPIC = "Alternative/U/E/vehicles/";
-
 
     // Every Subscription
     protected static final String speedSubscription = "{\"type\": \"speedSubscription\", \"payload\": {\"topic\":" + " \"Emergency/U/E/RemoteControl/+/E/vehicles/speed/#\", \"subscribe\": true}}";
@@ -131,13 +130,13 @@ public class RemoteControl {
         String oneLightEmergencySubscription = "{\"type\": \"lightsSubscription\", \"payload\": {\"topic\": \"Emergency/U/E/Message/lights/"
                 + vehicleID + "\", \"subscribe\": true}}";
 
-        publish("Anki/Vehicles/U/" + vehicleID + "/I", oneSpeedSubscription, 0, false);
+        publish("Anki/Vehicles/U/" + vehicleID + "/I", oneSpeedSubscription, 1, false);
         System.out.println(vehicleID + " : " + oneSpeedSubscription);
         Thread.sleep(2000);
-        publish("Anki/Vehicles/U/" + vehicleID + "/I", oneLaneSubscription, 2, false);
+        publish("Anki/Vehicles/U/" + vehicleID + "/I", oneLaneSubscription, 1, false);
         System.out.println(vehicleID + " : " + oneLaneSubscription);
         Thread.sleep(2000);
-        publish("Anki/Vehicles/U/" + vehicleID + "/I",oneLightSubscription, 2, false);
+        publish("Anki/Vehicles/U/" + vehicleID + "/I", oneLightSubscription, 1, false);
         System.out.println(vehicleID + " : " + oneLightSubscription);
         Thread.sleep(2000);
         publish("Anki/Vehicles/U/" + vehicleID + "/I", oneEmergencySubscription, 1, false);
@@ -148,18 +147,45 @@ public class RemoteControl {
         System.out.println("Remote set up done");
     }
 
-    public void subscribeCoordinatesOf(String vehicleID) throws MqttException, InterruptedException {
 
+    public void subscribeGPS(String vehicleID) throws MqttException, InterruptedException {
+        // speed
+        String specificSpeedTopic = "GPS/U/I/speed/" + vehicleID;
+        String speedSubscription = "{\"type\": \"speedSubscription\", \"payload\": {\"topic\": \"" + specificSpeedTopic + "\", \"subscribe\": true}}";
+        publish("Anki/Vehicles/U/" + vehicleID + "/I", speedSubscription, 1, false);
+        System.out.println(vehicleID + " : " + speedSubscription);
+
+        // lane
+        String specificLaneTopic = "GPS/U/I/laneChange/" + vehicleID;
+        String laneSubscription = "{\"type\": \"laneSubscription\", \"payload\": {\"topic\": \"" + specificLaneTopic + "\", \"subscribe\": true}}";
+        publish("Anki/Vehicles/U/" + vehicleID + "/I", laneSubscription, 1, false);
+        System.out.println(vehicleID + " : " + laneSubscription);
+
+        // lights
+        String specificLightsTopic = "GPS/U/I/lights/" + vehicleID;
+        String lightsSubscription = "{\"type\": \"lightsSubscription\", \"payload\": {\"topic\": \"" + specificLightsTopic + "\", \"subscribe\": true}}";
+        publish("Anki/Vehicles/U/" + vehicleID + "/I", lightsSubscription, 1, false);
+        System.out.println(vehicleID + " : " + lightsSubscription);
+
+        System.out.println("All subscriptions GPS set up done for " + vehicleID);
     }
 
     public void connectID(String vehicleID) throws MqttException, InterruptedException {
         String specificConnectTopic = "RemoteControl/U/E/vehicles/connect/" + vehicleID;
-        String oneConnectSubscription = "{\"type\": \"connectSubscription\", \"payload\": {\"topic\": \"RemoteControl/U/E/vehicles/connect/"
-                + vehicleID + "\", \"subscribe\": true}}";
+        String oneConnectSubscription = "{\"type\": \"connectSubscription\", \"payload\": {\"topic\": \"" + specificConnectTopic + "\", \"subscribe\": true}}";
         publish("Anki/Vehicles/U/" + vehicleID + "/I", oneConnectSubscription, 0, false);
-        Thread.sleep(3000);
-        publish(specificConnectTopic, t, 1, false);
-        System.out.println(vehicleID + " is connected");
+        System.out.println(vehicleID + " : " + oneConnectSubscription);
+    }
+
+    public void publish(String topic, String message, int qos, boolean retained) throws MqttException {
+        MqttMessage mqttMessage = new MqttMessage(message.getBytes());
+        mqttMessage.setQos(qos);
+        mqttMessage.setRetained(retained);
+        client.publish(topic, mqttMessage);
+    }
+
+    public void subscribe(String topic) throws MqttException {
+        client.subscribe(topic);
     }
 
     public void setSpeedTo(String vehicleID, String velocity, String acceleration) throws MqttException, InterruptedException {
@@ -168,7 +194,6 @@ public class RemoteControl {
                 velocity, acceleration);
         publish(specificSpeedTopic, payload, 1, false);
     }
-
     public void setLightsTo(String vehicleID, String lightType, String effect, int start, int end, int frequency) throws MqttException, InterruptedException {
         String specificLightsTopic = "RemoteControl/U/E/vehicles/lights/" + vehicleID;
         String payload = String.format("{\"%s\":{\"effect\":\"%s\",\"start\":%d,\"end\":%d,\"frequency\":%d}}",
@@ -190,16 +215,6 @@ public class RemoteControl {
         publish(specificLaneTopic, payload, 1, false);
     }
 
-
-    // Publish to any topic
-    private void publish(String topic, String message, int qos, boolean retained) throws MqttException {
-        MqttMessage mqttMessage = new MqttMessage(message.getBytes());
-        mqttMessage.setQos(qos);
-        mqttMessage.setRetained(retained);
-        client.publish(topic, mqttMessage);
-    }
-
-
     public static void main(String[] args) {
         try {
             System.out.println("Connected to broker URL : " + BROKER_URL);
@@ -207,8 +222,8 @@ public class RemoteControl {
             remote.discover();
             remote.connectAll();
             Thread.sleep(2000);
-            remote.subscribeVehicle(VehiclesID1[3]);
             remote.subscribeVehicle(VehiclesID1[7]);
+            remote.subscribeGPS(VehiclesID1[7]);
             System.out.println("Set up done");
         } catch (MqttException e) {
             e.printStackTrace();
